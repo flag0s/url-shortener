@@ -38,3 +38,59 @@
 2026-06-16T15:47:05 [INFO] REDIRECT code=1be05a4 -> https://google.com (hit #2)
 2026-06-16T15:52:36 [INFO] REDIRECT code=1be05a4 -> https://google.com (hit #3)
 2026-06-16T15:52:59 [INFO] STATS code=1be05a4 hit_count=3
+2026-06-22T17:31:48 [INFO] SHORTEN url=https://google.com code=498a6b6
+2026-06-22T17:31:49 [INFO] DEDUPLICATE url=https://google.com code=498a6b6
+2026-06-22T17:31:49 [INFO] DEDUPLICATE url=https://google.com code=498a6b6
+2026-06-22T17:31:50 [INFO] DEDUPLICATE url=https://google.com code=498a6b6
+2026-06-22T17:31:51 [INFO] DEDUPLICATE url=https://google.com code=498a6b6
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=85a2f19
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=a6e0e46
+2026-06-22T17:55:19 [INFO] DEDUPLICATE url=https://example.com code=a6e0e46
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=4ff1f70
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://other.com code=1fd7d3b
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=8ee402b
+2026-06-22T17:55:19 [INFO] REDIRECT code=8ee402b -> https://example.com (hit #1)
+2026-06-22T17:55:19 [INFO] REDIRECT code=8ee402b -> https://example.com (hit #2)
+2026-06-22T17:55:19 [INFO] STATS code=8ee402b hit_count=2
+2026-06-22T17:55:19 [WARNING] REDIRECT_NOT_FOUND code=doesnotexist
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=f3bd4d6
+2026-06-22T17:55:19 [INFO] REDIRECT code=f3bd4d6 -> https://example.com (hit #1)
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=5aedb0b
+2026-06-22T17:55:19 [INFO] STATS code=5aedb0b hit_count=0
+2026-06-22T17:55:19 [WARNING] STATS_NOT_FOUND code=doesnotexist
+2026-06-22T17:55:19 [INFO] SHORTEN url=https://example.com code=3313b77
+2026-06-22T17:55:19 [INFO] STATS code=3313b77 hit_count=0
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=cdc6b29
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=fbb13f9
+2026-06-22T17:56:36 [INFO] DEDUPLICATE url=https://example.com code=fbb13f9
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=1a31b34
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://other.com code=24b2f8d
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=52fd065
+2026-06-22T17:56:36 [INFO] REDIRECT code=52fd065 -> https://example.com (hit #1)
+2026-06-22T17:56:36 [INFO] REDIRECT code=52fd065 -> https://example.com (hit #2)
+2026-06-22T17:56:36 [INFO] STATS code=52fd065 hit_count=2
+2026-06-22T17:56:36 [WARNING] REDIRECT_NOT_FOUND code=doesnotexist
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=4cf6501
+2026-06-22T17:56:36 [INFO] REDIRECT code=4cf6501 -> https://example.com (hit #1)
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=9bce3ad
+2026-06-22T17:56:36 [INFO] STATS code=9bce3ad hit_count=0
+2026-06-22T17:56:36 [WARNING] STATS_NOT_FOUND code=doesnotexist
+2026-06-22T17:56:36 [INFO] SHORTEN url=https://example.com code=befb953
+2026-06-22T17:56:36 [INFO] STATS code=befb953 hit_count=0
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=571272d
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=8f8962a
+2026-06-22T17:59:51 [INFO] DEDUPLICATE url=https://example.com code=8f8962a
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=1923f43
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://other.com code=a487254
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=6e11522
+2026-06-22T17:59:51 [INFO] REDIRECT code=6e11522 -> https://example.com (hit #1)
+2026-06-22T17:59:51 [INFO] REDIRECT code=6e11522 -> https://example.com (hit #2)
+2026-06-22T17:59:51 [INFO] STATS code=6e11522 hit_count=2
+2026-06-22T17:59:51 [WARNING] REDIRECT_NOT_FOUND code=doesnotexist
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=1d5fc6e
+2026-06-22T17:59:51 [INFO] REDIRECT code=1d5fc6e -> https://example.com (hit #1)
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=08412c6
+2026-06-22T17:59:51 [INFO] STATS code=08412c6 hit_count=0
+2026-06-22T17:59:51 [WARNING] STATS_NOT_FOUND code=doesnotexist
+2026-06-22T17:59:51 [INFO] SHORTEN url=https://example.com code=bb8a692
+2026-06-22T17:59:51 [INFO] STATS code=bb8a692 hit_count=0

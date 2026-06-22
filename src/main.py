@@ -5,17 +5,25 @@ import time
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, Response
+from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel
 
 from src import database as db_ops
 from src.logger import logger
+from src.tracing import setup_tracing
 
 load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
+setup_tracing()
+
 app = FastAPI(title="URL Shortener")
+FastAPIInstrumentor.instrument_app(app)
+
+tracer = trace.get_tracer("url-shortener")
 
 REQUEST_COUNT = Counter(
     "http_requests_total",
@@ -71,9 +79,13 @@ def metrics():
 def shorten_url(body: ShortenRequest):
     start = time.time()
     endpoint = "/shorten"
+    span = trace.get_current_span()
+    span.set_attribute("url.target", body.url)
 
     existing = db_ops.get_by_target(body.url)
     if existing:
+        span.set_attribute("url.code", existing.code)
+        span.set_attribute("url.deduplicated", True)
         logger.info("DEDUPLICATE url=%s code=%s", body.url, existing.code)
         REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status_code=200).inc()
         REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
@@ -86,6 +98,8 @@ def shorten_url(body: ShortenRequest):
     code = _generate_code(body.url)
     record = db_ops.create_url(code=code, target_url=body.url)
 
+    span.set_attribute("url.code", record.code)
+    span.set_attribute("url.deduplicated", False)
     logger.info("SHORTEN url=%s code=%s", body.url, code)
     REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status_code=200).inc()
     REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
@@ -100,15 +114,20 @@ def shorten_url(body: ShortenRequest):
 def get_stats(code: str):
     start = time.time()
     endpoint = "/stats/{code}"
+    span = trace.get_current_span()
+    span.set_attribute("url.code", code)
 
     record = db_ops.get_by_code(code)
     if not record:
+        span.set_attribute("url.found", False)
         logger.warning("STATS_NOT_FOUND code=%s", code)
         ERROR_COUNT.labels(endpoint=endpoint, status_code=404).inc()
         REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=404).inc()
         REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
         raise HTTPException(status_code=404, detail="Short URL not found")
 
+    span.set_attribute("url.found", True)
+    span.set_attribute("url.hit_count", record.hit_count)
     logger.info("STATS code=%s hit_count=%d", code, record.hit_count)
     REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=200).inc()
     REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
@@ -124,15 +143,21 @@ def get_stats(code: str):
 def redirect(code: str):
     start = time.time()
     endpoint = "/{code}"
+    span = trace.get_current_span()
+    span.set_attribute("url.code", code)
 
     record = db_ops.increment_hits(code)
     if not record:
+        span.set_attribute("url.found", False)
         logger.warning("REDIRECT_NOT_FOUND code=%s", code)
         ERROR_COUNT.labels(endpoint=endpoint, status_code=404).inc()
         REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=404).inc()
         REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
         raise HTTPException(status_code=404, detail="Short URL not found")
 
+    span.set_attribute("url.found", True)
+    span.set_attribute("url.target", record.target_url)
+    span.set_attribute("url.hit_count", record.hit_count)
     logger.info("REDIRECT code=%s -> %s (hit #%d)", code, record.target_url, record.hit_count)
     REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=307).inc()
     REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
