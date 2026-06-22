@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   postgres:
     image: postgres:15
@@ -17,14 +15,33 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-urluser}:${POSTGRES_PASSWORD:-urlpassword}@postgres:5432/${POSTGRES_DB:-urlshortener}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      BASE_URL: http://localhost:8000
+      APP_VERSION: "1.1"
+      LOG_FILE: /dev/null
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
   prometheus:
     image: prom/prometheus:latest
     ports:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
 
   loki:
     image: grafana/loki:latest
@@ -35,9 +52,9 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
-      - "16686:16686"   # Jaeger UI
-      - "4317:4317"     # OTLP gRPC
-      - "4318:4318"     # OTLP HTTP
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
 
   grafana:
     image: grafana/grafana:latest

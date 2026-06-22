@@ -17,6 +17,7 @@ from src.tracing import setup_tracing
 load_dotenv()
 
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+APP_VERSION = os.getenv("APP_VERSION", "1.0")
 
 setup_tracing()
 
@@ -69,6 +70,11 @@ def _generate_code(url: str) -> str:
 
 
 # ---------- Endpoints ----------
+
+@app.get("/version")
+def version():
+    return {"version": APP_VERSION}
+
 
 @app.get("/metrics")
 def metrics():
