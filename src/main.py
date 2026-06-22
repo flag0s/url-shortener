@@ -4,11 +4,12 @@ import time
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 from pydantic import BaseModel
 
+from src import database as db_ops
 from src.logger import logger
-from src.models import URLRecord
 
 load_dotenv()
 
@@ -16,8 +17,21 @@ BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 app = FastAPI(title="URL Shortener")
 
-db: dict[str, URLRecord] = {}
-url_index: dict[str, str] = {}  # target_url -> code
+REQUEST_COUNT = Counter(
+    "http_requests_total",
+    "Total HTTP requests",
+    ["method", "endpoint", "status_code"],
+)
+REQUEST_DURATION = Histogram(
+    "http_request_duration_seconds",
+    "HTTP request duration in seconds",
+    ["endpoint"],
+)
+ERROR_COUNT = Counter(
+    "http_errors_total",
+    "Total HTTP errors",
+    ["endpoint", "status_code"],
+)
 
 
 # ---------- Schemas ----------
@@ -48,39 +62,56 @@ def _generate_code(url: str) -> str:
 
 # ---------- Endpoints ----------
 
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 @app.post("/shorten", response_model=ShortenResponse)
 def shorten_url(body: ShortenRequest):
-    if body.url in url_index:
-        code = url_index[body.url]
-        record = db[code]
-        logger.info("DEDUPLICATE url=%s code=%s", body.url, code)
+    start = time.time()
+    endpoint = "/shorten"
+
+    existing = db_ops.get_by_target(body.url)
+    if existing:
+        logger.info("DEDUPLICATE url=%s code=%s", body.url, existing.code)
+        REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status_code=200).inc()
+        REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
         return ShortenResponse(
-            short_code=code,
-            short_url=f"{BASE_URL}/{code}",
-            created_at=record.created_at.isoformat(),
+            short_code=existing.code,
+            short_url=f"{BASE_URL}/{existing.code}",
+            created_at=existing.created_at.isoformat(),
         )
 
     code = _generate_code(body.url)
-    record = URLRecord(code=code, target_url=body.url)
-    db[code] = record
-    url_index[body.url] = code
+    record = db_ops.create_url(code=code, target_url=body.url)
 
     logger.info("SHORTEN url=%s code=%s", body.url, code)
+    REQUEST_COUNT.labels(method="POST", endpoint=endpoint, status_code=200).inc()
+    REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
     return ShortenResponse(
-        short_code=code,
-        short_url=f"{BASE_URL}/{code}",
+        short_code=record.code,
+        short_url=f"{BASE_URL}/{record.code}",
         created_at=record.created_at.isoformat(),
     )
 
 
 @app.get("/stats/{code}", response_model=StatsResponse)
 def get_stats(code: str):
-    record = db.get(code)
+    start = time.time()
+    endpoint = "/stats/{code}"
+
+    record = db_ops.get_by_code(code)
     if not record:
         logger.warning("STATS_NOT_FOUND code=%s", code)
+        ERROR_COUNT.labels(endpoint=endpoint, status_code=404).inc()
+        REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=404).inc()
+        REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
         raise HTTPException(status_code=404, detail="Short URL not found")
 
     logger.info("STATS code=%s hit_count=%d", code, record.hit_count)
+    REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=200).inc()
+    REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
     return StatsResponse(
         short_code=code,
         target_url=record.target_url,
@@ -91,11 +122,18 @@ def get_stats(code: str):
 
 @app.get("/{code}")
 def redirect(code: str):
-    record = db.get(code)
+    start = time.time()
+    endpoint = "/{code}"
+
+    record = db_ops.increment_hits(code)
     if not record:
         logger.warning("REDIRECT_NOT_FOUND code=%s", code)
+        ERROR_COUNT.labels(endpoint=endpoint, status_code=404).inc()
+        REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=404).inc()
+        REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
         raise HTTPException(status_code=404, detail="Short URL not found")
 
-    record.hit_count += 1
     logger.info("REDIRECT code=%s -> %s (hit #%d)", code, record.target_url, record.hit_count)
+    REQUEST_COUNT.labels(method="GET", endpoint=endpoint, status_code=307).inc()
+    REQUEST_DURATION.labels(endpoint=endpoint).observe(time.time() - start)
     return RedirectResponse(url=record.target_url)

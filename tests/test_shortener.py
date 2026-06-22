@@ -1,16 +1,29 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app, db, url_index
+from src.database import SessionLocal, create_tables
+from src.main import app
+from src.models import URLRecord
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_db():
+    create_tables()
 
 
 @pytest.fixture(autouse=True)
-def clear_db():
-    db.clear()
-    url_index.clear()
+def clean_db():
+    def _clear():
+        session = SessionLocal()
+        try:
+            session.query(URLRecord).delete()
+            session.commit()
+        finally:
+            session.close()
+
+    _clear()
     yield
-    db.clear()
-    url_index.clear()
+    _clear()
 
 
 client = TestClient(app)
