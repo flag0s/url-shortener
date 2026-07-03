@@ -17,6 +17,7 @@ COPY --from=builder /install /usr/local
 COPY src/       ./src/
 COPY alembic/   ./alembic/
 COPY alembic.ini .
+COPY gunicorn.conf.py .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 

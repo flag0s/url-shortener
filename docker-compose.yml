@@ -23,7 +23,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-urluser}:${POSTGRES_PASSWORD:-urlpassword}@postgres:5432/${POSTGRES_DB:-urlshortener}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       BASE_URL: http://localhost:8000
-      APP_VERSION: "1.1"
+      APP_VERSION: "1.2.0"
       LOG_FILE: /dev/null
     restart: unless-stopped
     depends_on:
@@ -42,6 +42,8 @@ services:
       - "9090:9090"
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   loki:
     image: grafana/loki:latest

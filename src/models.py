@@ -13,7 +13,7 @@ class URLRecord(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(7), unique=True, nullable=False, index=True)
-    target_url = Column(String, nullable=False)
+    target_url = Column(String, unique=True, nullable=False, index=True)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
