@@ -43,6 +43,14 @@ APP_VERSION=1.3.0 ./scripts/rolling_update.sh   # deploy under a specific versio
 - `stress_test.py` — one-off burst: concurrent-identical-URL dedup race, malformed/edge-case requests (422/405/404), then a sustained high-concurrency load phase. Prints a summary at the end.
 - `concurrent_users_test.py` — simulates many independent users with staggered arrivals and think-time (not a synchronized flood). Seeds shared "viral" links and reports whether their `hit_count` matches expected, to catch concurrent-write regressions. Key flags: `--users`, `--initial-parallel` (how many start at once), `--arrival-interval` (seconds between subsequent arrivals), `--duration` (seconds each user stays active once it arrives).
 
+## Git workflow
+
+`main` is release-only — nothing is committed or pushed to it directly. Flow:
+
+1. Branch off `develop` for any change: `git checkout -b <type>/<short-description> develop` (e.g. `fix/…`, `feat/…`, `docs/…`, `ci/…`).
+2. Open a PR back into `develop` (`gh pr create --base develop`). This is where day-to-day work lands; CI (`.github/workflows/tests.yml`) runs on it automatically.
+3. When `develop` has a coherent, tested set of changes ready to ship, open a `develop` → `main` PR. This is the release gate — it requires explicit human approval before merging, even if the individual `develop`-bound PRs were already reviewed.
+
 ## Architecture
 
 **Single-file FastAPI app** (`src/main.py`) backed by Postgres via SQLAlchemy (`src/database.py`, `src/models.py`), fronted in production by gunicorn with 4 Uvicorn workers (`entrypoint.sh`).
